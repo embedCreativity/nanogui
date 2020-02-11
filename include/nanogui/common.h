@@ -133,7 +133,10 @@ enum class Cursor {
     CursorCount ///< Not a cursor --- should always be last: enables a loop over the cursor types.
 };
 
-template <typename Value, size_t Size> struct Array {
+template <typename Value_, size_t Size_> struct Array {
+    using Value = Value_;
+    static constexpr size_t Size = Size_;
+
     Array() { }
 
     Array(const Array &) = default;

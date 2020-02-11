@@ -19,19 +19,36 @@
 #include <nanogui/object.h>
 #include <unordered_map>
 
-NAMESPACE_BEGIN(enoki)
-NAMESPACE_BEGIN(detail)
-template <typename T, typename = int> struct scalar;
-NAMESPACE_END(detail)
-template <typename T, typename = int> struct enoki_type;
-template <typename T, typename = int> struct array_depth;
-NAMESPACE_END(enoki)
-
 NAMESPACE_BEGIN(nanogui)
 
 enum class VariableType { Invalid = 0, Int8, UInt8, Int16, UInt16,
                           Int32, UInt32, Int64, UInt64, Float16,
-                          Float32, Float64 };
+                          Float32, Float64, Bool };
+
+template <typename T> constexpr VariableType get_type() {
+    if constexpr (std::is_same_v<T, bool>)
+        return VariableType::Bool;
+
+    if constexpr (is_integral_v<T>) {
+        if constexpr (sizeof(T) == 1)
+            return std::is_signed_v<T> ? VariableType::Int8 : VariableType::UInt8;
+        else if constexpr (sizeof(T) == 2)
+            return std::is_signed_v<T> ? VariableType::Int16 : VariableType::UInt16;
+        else if constexpr (sizeof(T) == 4)
+            return std::is_signed_v<T> ? VariableType::Int32 : VariableType::UInt32;
+        else if constexpr (sizeof(T) == 8)
+            return std::is_signed_v<T> ? VariableType::Int64 : VariableType::UInt64;
+    } else if constexpr (std::is_floating_point_v<T>) {
+        if constexpr (sizeof(T) == 2)
+            return VariableType::Float16;
+        else if constexpr (sizeof(T) == 4)
+            return VariableType::Float32;
+        else if constexpr (sizeof(T) == 8)
+            return VariableType::Float64;
+    }
+
+    return VariableType::Invalid;
+}
 
 /// Return the size in bytes associated with a specific variable type
 extern NANOGUI_EXPORT size_t type_size(VariableType type);
@@ -97,11 +114,8 @@ public:
      *
      * The buffer will be replaced if it is already present.
      */
-    void set_buffer(const std::string &name,
-                    VariableType type,
-                    size_t ndim,
-                    std::array<size_t, 3> shape,
-                    const void *data);
+    void set_buffer(const std::string &name, VariableType type, size_t ndim,
+                    std::array<size_t, 3> shape, const void *data);
 
     /**
      * \brief Upload a uniform variable (e.g. a vector or matrix) that will be
@@ -110,35 +124,40 @@ public:
     template <typename Array> void set_uniform(const std::string &name,
                                                const Array &value) {
         std::array<size_t, 3> shape = { 1, 1, 1 };
-        size_t ndim;
+        size_t ndim = (size_t) -1;
         const void *data;
+        VariableType vtype;
 
-        if constexpr (enoki::array_depth<Array>::value == 0) {
+        if constexpr (std::is_scalar_v<Array>) {
             data = &value;
             ndim = 0;
-        } else if constexpr (enoki::array_depth<Array>::value == 1) {
-            data = value.data();
-            shape[0] = value.size();
+            vtype = get_type<Array>();
+        } else if constexpr (IsBuiltinArray) {
             ndim = 1;
-        } else if constexpr (enoki::array_depth<Array>::value == 2) {
+            shape[0] = Array::Size;
+            vtype = get_type<typename Array::Value>();
+        } else if constexpr (IsEnokiArray) {
+            if constexpr (Array::Depth == 1) {
+                shape[0] = value.size();
+                ndim = 1;
+            } else if constexpr (Array::Depth == 2) {
+                shape[0] = value.size();
+                shape[1] = value[0].size();
+                ndim = 2;
+            } else if constexpr (Array::Depth == 3) {
+                shape[0] = value.size();
+                shape[1] = value[0].size();
+                shape[2] = value[0][0].size();
+                ndim = 3;
+            }
             data = value.data();
-            shape[0] = value.size();
-            shape[1] = value[0].size();
-            ndim = 2;
-        } else if constexpr (enoki::array_depth<Array>::value == 3) {
-            data = value.data();
-            shape[0] = value.size();
-            shape[1] = value[0].size();
-            shape[2] = value[0][0].size();
-            ndim = 3;
-        } else {
-            throw std::runtime_error("Shader::set_uniform(): invalid input array dimension!");
+            vtype = get_type<typename Array::Scalar>();
         }
-        set_buffer(
-            name,
-            (VariableType)
-                enoki::enoki_type<typename enoki::detail::scalar<Array>::type>::value,
-            ndim, shape, data);
+
+        if (ndim == (size_t) -1)
+            throw std::runtime_error("Shader::set_uniform(): invalid input array dimension!");
+
+        set_buffer(name, vtype, ndim, shape, data);
     }
 
     /**
