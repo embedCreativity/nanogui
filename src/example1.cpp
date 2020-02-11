@@ -36,7 +36,6 @@
 #include <nanogui/texture.h>
 #include <nanogui/shader.h>
 #include <nanogui/renderpass.h>
-#include <enoki/transform.h>
 #include <stb_image.h>
 
 using namespace nanogui;
@@ -514,8 +513,8 @@ public:
             -1.f, 1.f, 0.f
         };
 
-        m_shader->set_buffer("indices", enoki::EnokiType::UInt32, 1, {3*2, 1, 1}, indices);
-        m_shader->set_buffer("position", enoki::EnokiType::Float32, 2, {4, 3, 1}, positions);
+        m_shader->set_buffer("indices", enoki::VariableType::UInt32, 1, {3*2, 1, 1}, indices);
+        m_shader->set_buffer("position", enoki::VariableType::Float32, 2, {4, 3, 1}, positions);
         m_shader->set_uniform("intensity", 0.5f);
     }
 

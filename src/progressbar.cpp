@@ -11,6 +11,7 @@
 
 #include <nanogui/progressbar.h>
 #include <nanogui/opengl.h>
+#include <cmath>
 
 NAMESPACE_BEGIN(nanogui)
 

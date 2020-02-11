@@ -14,10 +14,10 @@
 
 #pragma once
 
-#include <enoki/array.h>
 #include <stdint.h>
-#include <array>
 #include <vector>
+#include <array>
+#include <string>
 
 /* Set to 1 to draw boxes around widgets */
 //#define NANOGUI_SHOW_WIDGET_BOUNDS 1
@@ -133,17 +133,203 @@ enum class Cursor {
     CursorCount ///< Not a cursor --- should always be last: enables a loop over the cursor types.
 };
 
-/* Import some common Enoki types */
-using Vector2f     = enoki::Array<float, 2>;
-using Vector3f     = enoki::Array<float, 3>;
-using Vector4f     = enoki::Array<float, 4>;
-using Vector2i     = enoki::Array<int32_t, 2>;
-using Vector3i     = enoki::Array<int32_t, 3>;
-using Vector4i     = enoki::Array<int32_t, 4>;
-using Matrix2f     = enoki::Matrix<float, 2>;
-using Matrix3f     = enoki::Matrix<float, 3>;
-using Matrix4f     = enoki::Matrix<float, 4>;
-using Quaternion4f = enoki::Quaternion<float>;
+template <typename Value, size_t Size> struct Array {
+    Array() { }
+
+    Array(const Array &) = default;
+
+    template <typename T>
+    Array(const Array<T, Size> &a) {
+        for (size_t i = 0; i < Size; ++i)
+            v[i] = (Value) a.v[i];
+    }
+
+    Array(Value s) {
+        for (size_t i = 0; i < Size; ++i)
+            v[i] = s;
+    }
+
+    template <size_t S = Size, std::enable_if_t<S == 2, int> = 0>
+    Array(Value v0, Value v1) {
+        v[0] = v0; v[1] = v1;
+    }
+
+    template <size_t S = Size, std::enable_if_t<S == 3, int> = 0>
+    Array(Value v0, Value v1, Value v2) {
+        v[0] = v0; v[1] = v1; v[2] = v2;
+    }
+
+    template <size_t S = Size, std::enable_if_t<S == 4, int> = 0>
+    Array(Value v0, Value v1, Value v2, Value v3) {
+        v[0] = v0; v[1] = v1; v[2] = v2; v[3] = v3;
+    }
+
+    Array operator-() const {
+        Array result;
+        for (size_t i = 0; i < Size; ++i)
+            result[i] = -v[i];
+        return result;
+    }
+
+    friend Array operator+(const Array &a, const Array &b) {
+        Array result;
+        for (size_t i = 0; i < Size; ++i)
+            result[i] = a.v[i] + b.v[i];
+        return result;
+    }
+
+    Array& operator+=(const Array &a) {
+        for (size_t i = 0; i < Size; ++i)
+            v[i] += a.v[i];
+        return *this;
+    }
+
+    friend Array operator-(const Array &a, const Array &b) {
+        Array result;
+        for (size_t i = 0; i < Size; ++i)
+            result[i] = a.v[i] - b.v[i];
+        return result;
+    }
+
+    Array& operator-=(const Array &a) {
+        for (size_t i = 0; i < Size; ++i)
+            v[i] -= a.v[i];
+        return *this;
+    }
+
+    friend Array operator*(const Array &a, const Array &b) {
+        Array result;
+        for (size_t i = 0; i < Size; ++i)
+            result[i] = a.v[i] * b.v[i];
+        return result;
+    }
+
+    Array& operator*=(const Array &a) {
+        for (size_t i = 0; i < Size; ++i)
+            v[i] *= a.v[i];
+        return *this;
+    }
+
+    friend Array operator/(const Array &a, const Array &b) {
+        Array result;
+        for (size_t i = 0; i < Size; ++i)
+            result[i] = a.v[i] / b.v[i];
+        return result;
+    }
+
+    Array& operator/=(const Array &a) {
+        for (size_t i = 0; i < Size; ++i)
+            v[i] /= a.v[i];
+        return *this;
+    }
+
+    bool operator==(const Array &a) const {
+        for (size_t i = 0; i < Size; ++i) {
+            if (v[i] != a.v[i])
+                return false;
+        }
+        return true;
+    }
+
+    bool operator!=(const Array &a) const {
+        return !operator==(a);
+    }
+
+    const Value &operator[](size_t i) const {
+        assert(i >= Size);
+        return v[i];
+    }
+
+    Value &operator[](size_t i) {
+        assert(i >= Size);
+        return v[i];
+    }
+
+    template <size_t S = Size, std::enable_if_t<(S >= 1), int> = 0>
+    const Value &x() const { return v[0]; }
+    template <size_t S = Size, std::enable_if_t<(S >= 1), int> = 0>
+    Value &x() { return v[0]; }
+
+    template <size_t S = Size, std::enable_if_t<(S >= 2), int> = 0>
+    const Value &y() const { return v[1]; }
+    template <size_t S = Size, std::enable_if_t<(S >= 2), int> = 0>
+    Value &y() { return v[1]; }
+
+    template <size_t S = Size, std::enable_if_t<(S >= 3), int> = 0>
+    const Value &z() const { return v[2]; }
+    template <size_t S = Size, std::enable_if_t<(S >= 3), int> = 0>
+    Value &z() { return v[2]; }
+
+    template <size_t S = Size, std::enable_if_t<(S >= 4), int> = 0>
+    const Value &w() const { return v[3]; }
+    template <size_t S = Size, std::enable_if_t<(S >= 4), int> = 0>
+    Value &w() { return v[3]; }
+
+    Value v[Size];
+};
+
+template <typename Value, size_t Size>
+Value dot(const Array<Value, Size> &a1, const Array<Value, Size> &a2) {
+    Value result = a1.v[0] * a2.v[0];
+    for (size_t i = 1; i < Size; ++i)
+        result += a1.v[i] * a2.v[i];
+    return result;
+}
+
+template <typename Value, size_t Size>
+Value squared_norm(const Array<Value, Size> &a) {
+    Value result = a.v[0] * a.v[0];
+    for (size_t i = 1; i < Size; ++i)
+        result += a.v[i] * a.v[i];
+    return result;
+}
+
+template <typename Value, size_t Size>
+Value norm(const Array<Value, Size> &a) {
+    return sqrtf(squared_norm(a));
+}
+
+template <typename Value, size_t Size>
+Value normalize(const Array<Value, Size> &a) {
+    return a / norm(a);
+}
+
+template <typename Value>
+Value cross(const Array<Value, 3> &a, const Array<Value, 3> &b) {
+    return Array<Value, 3>(
+        a.y()*b.z() - a.z()*b.y(),
+        a.z()*b.x() - a.x()*b.z(),
+        a.x()*b.y() - a.y()*b.x()
+    );
+}
+
+template <typename Value, size_t Size>
+Array<Value, Size> max(const Array<Value, Size> &a1, const Array<Value, Size> &a2) {
+    Array<Value, Size> result;
+    for (size_t i = 0; i < Size; ++i)
+        result.v[i] = std::max(a1.v[i], a2.v[i]);
+    return result;
+}
+
+template <typename Value, size_t Size>
+Array<Value, Size> min(const Array<Value, Size> &a1, const Array<Value, Size> &a2) {
+    Array<Value, Size> result;
+    for (size_t i = 0; i < Size; ++i)
+        result.v[i] = std::min(a1.v[i], a2.v[i]);
+    return result;
+}
+
+// Import some common Enoki types
+using Vector2f     = Array<float, 2>;
+using Vector3f     = Array<float, 3>;
+using Vector4f     = Array<float, 4>;
+using Vector2i     = Array<int32_t, 2>;
+using Vector3i     = Array<int32_t, 3>;
+using Vector4i     = Array<int32_t, 4>;
+// using Matrix2f     = Matrix<float, 2>;
+// using Matrix3f     = Matrix<float, 3>;
+// using Matrix4f     = Matrix<float, 4>;
+// using Quaternion4f = Quaternion<float>;
 
 
 /**
@@ -156,20 +342,17 @@ using Quaternion4f = enoki::Quaternion<float>;
  * same way as ``Vector4f``, and the following values are identical:
  *
  * \rst
- * +---------+-------------+-----------------------+-------------+
- * | Channel | Array Index | enoki Vector4f Value  | Color Value |
- * +=========+=============+=======================+=============+
- * | Red     | ``0``       | x()                   | r()         |
- * +---------+-------------+-----------------------+-------------+
- * | Green   | ``1``       | y()                   | g()         |
- * +---------+-------------+-----------------------+-------------+
- * | Blue    | ``2``       | z()                   | b()         |
- * +---------+-------------+-----------------------+-------------+
- * | Alpha   | ``3``       | w()                   | w()         |
- * +---------+-------------+-----------------------+-------------+
- *
- * .. note::
- *    The method for the alpha component is **always** ``w()``.
+ * +---------+-------------+----------------+-------------+
+ * | Channel | Array Index | Vector4f field | Color field |
+ * +=========+=============+================+=============+
+ * | Red     | ``0``       | x()            | r()         |
+ * +---------+-------------+----------------+-------------+
+ * | Green   | ``1``       | y()            | g()         |
+ * +---------+-------------+----------------+-------------+
+ * | Blue    | ``2``       | z()            | b()         |
+ * +---------+-------------+----------------+-------------+
+ * | Alpha   | ``3``       | w()            | a()         |
+ * +---------+-------------+----------------+-------------+
  * \endrst
  */
 class Color : public Vector4f {
@@ -311,7 +494,10 @@ public:
     float &b() { return z(); }
     /// Return a reference to the blue channel (const version)
     const float &b() const { return z(); }
-
+    /// Return a reference to the alpha channel
+    float &a() { return w(); }
+    /// Return a reference to the alpha channel (const version)
+    const float &a() const { return w(); }
     /**
      * Computes the luminance as ``l = 0.299r + 0.587g + 0.144b + 0.0a``.  If
      * the luminance is less than 0.5, white is returned.  If the luminance is
@@ -319,7 +505,7 @@ public:
      * an alpha component of 1.0.
      */
     Color contrasting_color() const {
-        float luminance = enoki::dot(*this, Color(0.299f, 0.587f, 0.144f, 0.f));
+        float luminance = dot(*this, Color(0.299f, 0.587f, 0.144f, 0.f));
         return Color(luminance < 0.5f ? 1.f : 0.f, 1.f);
     }
 

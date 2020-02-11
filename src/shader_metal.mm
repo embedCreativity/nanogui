@@ -3,6 +3,7 @@
 #include <nanogui/screen.h>
 #include <nanogui/texture.h>
 #include <nanogui/renderpass.h>
+#include <iostream>
 
 #import <Metal/Metal.h>
 #import <QuartzCore/CAMetalLayer.h>
@@ -10,8 +11,6 @@
 #define NANOGUI_BUFFER_THRESHOLD 64
 
 NAMESPACE_BEGIN(nanogui)
-
-using enoki::EnokiType;
 
 id<MTLFunction> compile_metal_shader(id<MTLDevice> device,
                                      const std::string &name,
@@ -215,7 +214,7 @@ Shader::~Shader() {
 }
 
 void Shader::set_buffer(const std::string &name,
-                        EnokiType dtype,
+                        VariableType dtype,
                         size_t ndim,
                         std::array<size_t, 3> shape,
                         const void *data) {
@@ -230,7 +229,7 @@ void Shader::set_buffer(const std::string &name,
         throw std::runtime_error(
             "Shader::set_buffer(): argument named \"" + name + "\" is not a buffer!");
 
-    size_t size = enoki_type_size(dtype) * shape[0] * shape[1] * shape[2];
+    size_t size = type_size(dtype) * shape[0] * shape[1] * shape[2];
     if (buf.buffer && buf.size != size) {
         if (buf.size <= NANOGUI_BUFFER_THRESHOLD)
             delete[] (uint8_t *) buf.buffer;

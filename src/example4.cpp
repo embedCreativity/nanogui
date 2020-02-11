@@ -18,8 +18,8 @@
 #include <nanogui/canvas.h>
 #include <nanogui/shader.h>
 #include <nanogui/renderpass.h>
-#include <enoki/transform.h>
 #include <GLFW/glfw3.h>
+#include <iostream>
 
 #if defined(_WIN32)
 #  if defined(APIENTRY)
@@ -33,7 +33,6 @@ using nanogui::Vector2i;
 using nanogui::Shader;
 using nanogui::Canvas;
 using nanogui::ref;
-using enoki::EnokiType;
 
 class MyCanvas : public Canvas {
 public:
