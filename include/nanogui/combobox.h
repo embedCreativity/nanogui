@@ -15,8 +15,22 @@
 #pragma once
 
 #include <nanogui/popupbutton.h>
+#include <mutex>
 
 NAMESPACE_BEGIN(nanogui)
+
+class ComboBoxCallbackInterface
+{
+public:
+    /************************************************************/
+    /* TYPE DECLARATIONS                                        */
+    /************************************************************/
+
+    /************************************************************/
+    /* METHOD DECLARATIONS                                      */
+    /************************************************************/
+    virtual void cbCallBack(int) {};
+};
 
 /**
  * \class ComboBox combobox.h nanogui/combobox.h
@@ -39,25 +53,47 @@ public:
              const std::vector<std::string> &items_short);
 
     /// The current index this ComboBox has selected.
-    int selected_index() const { return m_selected_index; }
+    int selected_index() {
+        m_mutex.lock();
+        int ret = m_selected_index;
+        m_mutex.unlock();
+        return ret;
+    }
 
     /// Sets the current index this ComboBox has selected.
     void set_selected_index(int idx);
 
     /// The callback to execute for this ComboBox.
-    std::function<void(int)> callback() const { return m_callback; }
+    ComboBoxCallbackInterface* callback() const{ return m_callback; }
 
     /// Sets the callback to execute for this ComboBox.
-    void set_callback(const std::function<void(int)> &callback) { m_callback = callback; }
+    void set_callback(ComboBoxCallbackInterface* callback)
+    { 
+        m_mutex.lock();
+        m_callback = callback;
+        m_mutex.unlock();
+    }
 
     /// Sets the items for this ComboBox, providing both short and long descriptive lables for each item.
     void set_items(const std::vector<std::string> &items, const std::vector<std::string> &items_short);
     /// Sets the items for this ComboBox.
     void set_items(const std::vector<std::string> &items) { set_items(items, items); }
     /// The items associated with this ComboBox.
-    const std::vector<std::string> &items() const { return m_items; }
+    const std::vector<std::string> items() 
+    { 
+        m_mutex.lock();
+        std::vector<std::string> ret = m_items;
+        m_mutex.unlock();
+        return ret; 
+    }
     /// The short descriptions associated with this ComboBox.
-    const std::vector<std::string> &items_short() const { return m_items_short; }
+    const std::vector<std::string> items_short() 
+    { 
+        m_mutex.lock();
+        std::vector<std::string> ret = m_items_short;
+        m_mutex.unlock();
+        return ret;
+    }
 
     /// Handles mouse scrolling events for this ComboBox.
     virtual bool scroll_event(const Vector2i &p, const Vector2f &rel) override;
@@ -75,10 +111,13 @@ protected:
     std::vector<std::string> m_items_short;
 
     /// The callback for this ComboBox.
-    std::function<void(int)> m_callback;
+    ComboBoxCallbackInterface* m_callback;
 
     /// The current index this ComboBox has selected.
     int m_selected_index;
+
+    // Protect our structure when editting
+    std::mutex m_mutex;
 };
 
 NAMESPACE_END(nanogui)

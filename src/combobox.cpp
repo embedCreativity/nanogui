@@ -33,17 +33,22 @@ ComboBox::ComboBox(Widget *parent, const std::vector<std::string> &items, const 
 void ComboBox::set_selected_index(int idx) {
     if (m_items_short.empty())
         return;
+    m_mutex.lock();
     const std::vector<Widget *> &children = m_container->children();
     ((Button *) children[m_selected_index])->set_pushed(false);
     ((Button *) children[idx])->set_pushed(true);
     m_selected_index = idx;
     set_caption(m_items_short[idx]);
+    m_mutex.unlock();
 }
 
 void ComboBox::set_items(const std::vector<std::string> &items, const std::vector<std::string> &items_short) {
     assert(items.size() == items_short.size());
+
+    m_mutex.lock();
     m_items = items;
     m_items_short = items_short;
+
 
     if (m_selected_index < 0 || m_selected_index >= (int) items.size())
         m_selected_index = 0;
@@ -69,10 +74,11 @@ void ComboBox::set_items(const std::vector<std::string> &items, const std::vecto
             set_pushed(false);
             popup()->set_visible(false);
             if (m_callback)
-                m_callback(index);
+                m_callback->cbCallBack(index);
         });
         index++;
     }
+    m_mutex.unlock();
     set_selected_index(m_selected_index);
 }
 
@@ -82,12 +88,12 @@ bool ComboBox::scroll_event(const Vector2i &p, const Vector2f &rel) {
     if (rel.y() < 0) {
         set_selected_index(std::min(m_selected_index+1, (int)(items().size()-1)));
         if (m_callback)
-            m_callback(m_selected_index);
+            m_callback->cbCallBack(m_selected_index);
         return true;
     } else if (rel.y() > 0) {
         set_selected_index(std::max(m_selected_index-1, 0));
         if (m_callback)
-            m_callback(m_selected_index);
+            m_callback->cbCallBack(m_selected_index);
         return true;
     }
     return Widget::scroll_event(p, rel);
