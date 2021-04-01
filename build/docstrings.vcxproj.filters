@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="16.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <CustomBuild Include="C:\source\BettyUI\nanogui\build\CMakeFiles\ab36881a65e0660e1f526818ddd83b98\docstrings.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="C:\source\BettyUI\nanogui\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="C:\source\BettyUI\nanogui\build\CMakeFiles\docstrings" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="CMake Rules">
+      <UniqueIdentifier>{E38F64F5-5923-3035-8FC9-FBFADE52476E}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>
